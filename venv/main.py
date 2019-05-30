@@ -5,6 +5,7 @@ import threading
 import random
 from collections import Counter
 from numpy.random import permutation
+import math
 
 c_index = 1
 c_tab = ["white"]
@@ -65,20 +66,40 @@ def create(numel):
     tab = np.zeros(numel * numel).reshape(numel, numel)
     return tab
 
+def sc_create(numel):
+    tab = np.random.rand(numel * numel).reshape(numel, numel)
+    return tab
+
 def pause():
     global paused
+    global neigh
     if not paused:
         paused = True
     else:
         paused = False
-        show(tab, numel)
+        show(tab, numel, neigh)
 
-def show(tab, numel):
+def show(tab, numel, neigh):
     global paused
+    neigh = my_var2.get()
+    rnd = isRand.get()
+    opt = side.get()
     if not paused:
-        moore(tab,numel)
+        if neigh=="Moore":
+            moore(tab,numel)
+        elif neigh=="Neumann":
+            neumann(tab,numel)
+        elif neigh=="Pentagonal":
+            penta(tab,numel)
+        elif neigh=="Hexagonal":
+            if rnd:
+                hexa(tab,numel, 3)
+            else:
+                hexa(tab,numel, opt)
+        elif neigh=="In radius":
+            growthRange(tab,numel,int(entry_r.get()))
         prints(tab,numel)
-        threading.Timer(3.0, show,(tab,numel)).start()
+        threading.Timer(2.0, show,(tab,numel,neigh)).start()
 
 
 def prints(tab, numel):
@@ -93,26 +114,30 @@ def prints(tab, numel):
 def selected():
     global tab
     global numel
+    global sc_tab
+    global neigh
 
     numel = int(entry2.get())
 
     tab = create(numel)
+    sc_tab = sc_create(numel)
     prints(tab, numel)
 
     opt = my_var.get()
+    neigh = my_var2.get()
 
     rad = int(entry_r.get())
     rows = int(entry_i.get())
     cols = int(entry_j.get())
     amount = int(entry_rnd.get())
     
-    if opt == 30:
+    if opt == "Homogenous":
         homo(tab, rows, cols)
-    elif opt == 60:
+    elif opt == "In range":
         in_range(tab, rad)
-    elif opt == 90:
+    elif opt == "Manual choose":
         man(tab, numel)
-    elif opt == 225:
+    elif opt == "Random":
         rnd(tab, numel, amount)
     else:
         print("stuff")
@@ -212,21 +237,159 @@ def moore(tab, N):
                     tab2[i,j] = winner[0]
     tab[:] = tab2[:]
 
-def neumann():
-    pass
+def neumann(tab, N):
+    #von neumann
+    global c_tab
+    tab2 = tab.copy()
+    y = None
+    for i in range(N):
+        for j in range(N):
+            n_tab = []
+            n_tab.append(int(tab[i, (j - 1) % N]))
+            n_tab.append(int(tab[i, (j + 1) % N]))
+            n_tab.append(int(tab[(i - 1) % N, j]))
+            n_tab.append(int(tab[(i + 1) % N, j]))
 
-def hexa():
-    pass
+            l = len(n_tab)
+            k = 0
+            while k in n_tab:
+                n_tab.remove(k)
 
-def penta():
-    pass
+            if n_tab:
+                if n_tab[0] != 0 and tab[i, j] == 0:
+                    winner = [word for word, word_count in Counter(n_tab).most_common(1)]
+                    tab2[i, j] = winner[0]
+    tab[:] = tab2[:]
+
+def hexa(tab, N, opt):
+    #hexagonal edit
+    global c_tab
+    tab2 = tab.copy()
+    repeat = False
+    for i in range(N):
+        for j in range(N):
+            n_tab = []
+            if repeat:
+                opt = 3
+
+            if opt==3:
+                opt=random.randint(1,2)
+                repeat = True
+
+            if opt==1:
+                n_tab.append(int(tab[i, (j - 1) % N]))
+                n_tab.append(int(tab[i, (j + 1) % N]))
+                n_tab.append(int(tab[(i - 1) % N, j]))
+                n_tab.append(int(tab[(i + 1) % N, j]))
+                n_tab.append(int(tab[(i - 1) % N, (j + 1) % N]))
+                n_tab.append(int(tab[(i + 1) % N, (j - 1) % N]))
+
+            elif opt==2:
+                n_tab.append(int(tab[i, (j - 1) % N]))
+                n_tab.append(int(tab[i, (j + 1) % N]))
+                n_tab.append(int(tab[(i - 1) % N, j]))
+                n_tab.append(int(tab[(i + 1) % N, j]))
+                n_tab.append(int(tab[(i - 1) % N, (j - 1) % N]))
+                n_tab.append(int(tab[(i + 1) % N, (j + 1) % N]))
+
+            l = len(n_tab)
+            k = 0
+            while k in n_tab:
+                n_tab.remove(k)
+
+            if n_tab:
+                if n_tab[0]!=0 and tab[i,j]==0:
+                    winner = [word for word, word_count in Counter(n_tab).most_common(1)]
+                    tab2[i,j] = winner[0]
+    tab[:] = tab2[:]
+
+def penta(tab, N):
+    #pentagonal edit
+    global c_tab
+    tab2 = tab.copy()
+    y = None
+    for i in range(N):
+        for j in range(N):
+            n_tab = []
+            opt = random.randint(1,4)
+            if opt==1:
+                n_tab.append(int(tab[i, (j - 1) % N]))
+                n_tab.append(int(tab[(i - 1) % N, j]))
+                n_tab.append(int(tab[(i + 1) % N, j]))
+                n_tab.append(int(tab[(i - 1) % N, (j - 1) % N]))
+                n_tab.append(int(tab[(i + 1) % N, (j - 1) % N]))
+            elif opt==2:
+                n_tab.append(int(tab[i, (j + 1) % N]))
+                n_tab.append(int(tab[(i - 1) % N, j]))
+                n_tab.append(int(tab[(i + 1) % N, j]))
+                n_tab.append(int(tab[(i - 1) % N, (j + 1) % N]))
+                n_tab.append(int(tab[(i + 1) % N, (j + 1) % N]))
+            elif opt==3:
+                n_tab.append(int(tab[i, (j - 1) % N]))
+                n_tab.append(int(tab[i, (j + 1) % N]))
+                n_tab.append(int(tab[(i - 1) % N, j]))
+                n_tab.append(int(tab[(i - 1) % N, (j - 1) % N]))
+                n_tab.append(int(tab[(i - 1) % N, (j + 1) % N]))
+            elif opt==4:
+                n_tab.append(int(tab[i, (j - 1) % N]))
+                n_tab.append(int(tab[i, (j + 1) % N]))
+                n_tab.append(int(tab[(i + 1) % N, j]))
+                n_tab.append(int(tab[(i + 1) % N, (j - 1) % N]))
+                n_tab.append(int(tab[(i + 1) % N, (j + 1) % N]))
+
+            l = len(n_tab)
+            k = 0
+            while k in n_tab:
+                n_tab.remove(k)
+
+            if n_tab:
+                if n_tab[0]!=0 and tab[i,j]==0:
+                    winner = [word for word, word_count in Counter(n_tab).most_common(1)]
+                    tab2[i,j] = winner[0]
+    tab[:] = tab2[:]
+
+
+def calculateDistance(x1, y1, x2, y2):
+    dist = math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
+    return dist
+
+
+def growthRange(tab,N, radius):
+    #w promieniu - środki ciężkości edit
+    global sc_tab
+    tab2 = tab.copy()
+    rows, cols = len(tab), len(tab[0])
+    for i in range(N):
+        for j in range(N):
+            n_tab =[]
+            c = neighbors(tab, i, j, radius)
+            if c!=0:
+                for x in range(i - radius, i + radius + 1):
+                    for y in range(j - radius, j + radius + 1):
+                        if 0 <= x < rows and 0 <= y < cols:
+                            if x!=y:
+                                d = calculateDistance(x+sc_tab[x][y],y+sc_tab[x][y],i+sc_tab[i][j],j+sc_tab[i][j])
+                                if d<radius:
+                                    n_tab.append(int(tab[x][y]))
+
+                                l = len(n_tab)
+                                k = 0
+                                while k in n_tab:
+                                    n_tab.remove(k)
+
+                                if n_tab:
+                                    if n_tab[0] != 0 and tab[i, j] == 0:
+                                        winner = [word for word, word_count in Counter(n_tab).most_common(1)]
+                                        tab2[i, j] = winner[0]
+    tab[:] = tab2[:]
 
 #niestabilny fragment
 r = lambda: random.randint(0,255)
 tab = np.array([])
+sc_tab = np.array([])
 t = None
 numel = 0
-scale = 15
+scale = 13
 cnt = 0
 
 mGui = Tk()
@@ -236,35 +399,78 @@ mGui.resizable(False,False)
 
 my_var = IntVar()
 size = StringVar()
+
+
 WIDTH, HEIGHT = 600, 600
 
 paused = True
 
-rb1 = Radiobutton(mGui, text='Homogenous', variable=my_var, value=30)
-rb2 = Radiobutton(mGui, text='In range', variable=my_var, value=60)
-rb3 = Radiobutton(mGui, text='Manual choose', variable=my_var, value=90)
-rb4 = Radiobutton(mGui, text='Random', variable=my_var, value=225)
+neigh = None
+
+# rb1 = Radiobutton(mGui, text='Homogenous', variable=my_var, value=30)
+# rb2 = Radiobutton(mGui, text='In range', variable=my_var, value=60)
+# rb3 = Radiobutton(mGui, text='Manual choose', variable=my_var, value=90)
+# rb4 = Radiobutton(mGui, text='Random', variable=my_var, value=225)
+
+OPTIONS = [
+"Homogenous",
+"In range",
+"Manual choose",
+"Random"
+]
+
+lab_nuc = Label(text='\nGrain nucleation:\n').grid(row=0, sticky='W', padx=(3,0))
+
+my_var = StringVar(mGui)
+my_var.set(OPTIONS[0])
+
+dl1 = OptionMenu(mGui,my_var,*OPTIONS).grid(row=1, sticky='W', padx=(3,0))
 
 but = Button(mGui,text='Show',command=selected)
 but1 = Button(mGui,text='Start',command=pause)
-but.grid(row=4, sticky='S')
-but1.grid(row=7, column=0, sticky='S')
+but.grid(row=4, sticky='E')
+but1.grid(row=6, column=0, sticky='E')
 
-lab_empty = Label(text='\nChoose the rule:\n').grid(row=0, sticky='W', padx=(5,0))
 
-rb1.grid(row=1, sticky='W', padx=(10,0))
-rb2.grid(row=2, sticky='W', padx=(10,0))
-rb3.grid(row=3, sticky='W', padx=(10,0))
-rb4.grid(row=4, sticky='W', padx=(10,0))
+OPTIONS2 = [
+"Moore",
+"Neumann",
+"Pentagonal",
+"Hexagonal",
+"In radius"
+]
 
-lab2 = Label(text='Size:').grid(row=6, column=0, sticky='W')
+lab_neig = Label(text='\nNeighborhood:\n').grid(row=2, sticky='W', padx=(3,0))
+
+my_var2 = StringVar(mGui)
+my_var2.set(OPTIONS2[0])
+
+dl2 = OptionMenu(mGui,my_var2,*OPTIONS2).grid(row=3, sticky='W', padx=(3,0))
+
+
+# rb1.grid(row=1, sticky='W', padx=(10,0))
+# rb2.grid(row=2, sticky='W', padx=(10,0))
+# rb3.grid(row=3, sticky='W', padx=(10,0))
+# rb4.grid(row=4, sticky='W', padx=(10,0))
+
+isRand = BooleanVar(mGui)
+isRand.set(False)
+rb1 = Checkbutton(mGui, text='Random', variable=isRand)
+rb1.grid(row=4, sticky='W', padx=(3,0))
 
 entry2 = Entry(mGui) #size
 
+side = IntVar(mGui)
 
-entry2.insert(END, '30')
+rb2 = Radiobutton(mGui, text='Left', variable=side, value="1")
+rb2.grid(row=5, sticky='W', padx=(10,0))
+rb2.select()
+rb3 = Radiobutton(mGui, text='Right', variable=side, value="2")
+rb3.grid(row=6, sticky='W', padx=(10,0))
 
-entry2.grid(row=7, column=0, sticky='W')
+lab2 = Label(text='Size:').grid(row=6, column=0, sticky='N')
+entry2.insert(END, '35')
+entry2.grid(row=7, column=0, sticky='N')
 
 
 entry_i = Entry(mGui)
@@ -274,25 +480,25 @@ entry_r = Entry(mGui)
 
 entry_i.insert(END, '5')
 entry_j.insert(END, '5')
-entry_rnd.insert(END, '20')
+entry_rnd.insert(END, '10')
 entry_r.insert(END, '5')
 
 
-lab_r = Label(text='Radius:').grid(row=1, sticky='E')
-entry_r.grid(row=2, column=0, sticky='E')
+lab_r = Label(text='Radius:').grid(row=0, column=0, sticky='N')
+entry_r.grid(row=0, column=0, sticky='S')
 
-lab_i = Label(text='Rows:').grid(row=3, sticky='E')
-entry_i.grid(row=4, sticky='E')
+lab_i = Label(text='Rows:').grid(row=1, column=0, sticky='N')
+entry_i.grid(row=2, column=0, sticky='N')
 
-lab_j = Label(text='Cols:').grid(row=5, sticky='E')
-entry_j.grid(row=6, column=0, sticky='E')
+lab_j = Label(text='Cols:').grid(row=2, column=0, sticky='S')
+entry_j.grid(row=3, column=0, sticky='N')
 
-lab_j = Label(text='Amount:').grid(row=7, sticky='E')
-entry_rnd.grid(row=8, column=0, sticky='E')
+lab_j = Label(text='Amount:').grid(row=4, column=0, sticky='N')
+entry_rnd.grid(row=5, column=0, sticky='N')
 
 
 can = Canvas(mGui, width=WIDTH, height=HEIGHT, bg="#ffffff")
-can.grid(row=9, column=0)
+can.grid(row=8, column=0)
 
 
 mGui.mainloop()
