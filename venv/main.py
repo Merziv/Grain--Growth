@@ -6,6 +6,7 @@ import random
 from collections import Counter
 from numpy.random import permutation
 import math
+from functools import partial
 
 c_index = 1
 c_tab = ["white"]
@@ -63,7 +64,9 @@ def shuffle2d(arr2d, rand=random):
 
 def create(numel):
     #utworz wstepna tablice
+    global e_tab
     tab = np.zeros(numel * numel).reshape(numel, numel)
+    e_tab = np.zeros(numel * numel).reshape(numel, numel)
     return tab
 
 def sc_create(numel):
@@ -99,17 +102,36 @@ def show(tab, numel, neigh):
         elif neigh=="In radius":
             growthRange(tab,numel,int(entry_r.get()))
         prints(tab,numel)
-        threading.Timer(2.0, show,(tab,numel,neigh)).start()
+        threading.Timer(1.0, show,(tab,numel,neigh)).start()
 
 
 def prints(tab, numel):
     can.delete(ALL)
     global c_tab
+    global paused
+    c = 0
     for i in range(0, numel):
         for j in range(0, numel):
+            if tab[i][j]==0:
+                c+=1
             OneSquare(can, scale * j, scale * i, scale * j + scale, scale * i + scale, c_tab[int(tab[i][j])], i, j, tab)
+    if c<=0 and not paused:
+        paused=True
 
-
+def print_energy():
+    can.delete(ALL)
+    global e_tab
+    global numel
+    global paused
+    c = 0
+    for i in range(0, numel):
+        for j in range(0, numel):
+            if e_tab[i][j]==0:
+                OneSquare(can, scale * j, scale * i, scale * j + scale, scale * i + scale, "white", i, j, tab)
+            else:
+                OneSquare(can, scale * j, scale * i, scale * j + scale, scale * i + scale, "#191970", i, j, tab)
+    if not paused:
+        paused=True
 
 def selected():
     global tab
@@ -383,10 +405,78 @@ def growthRange(tab,N, radius):
                                         tab2[i, j] = winner[0]
     tab[:] = tab2[:]
 
+def energy():
+    global tab
+    global e_tab
+    global numel
+    N = numel
+    rows, cols = len(tab), len(tab[0])
+    for i in permutation(N):
+        for j in permutation(N):
+            n_tab = []
+            n_tab.append(int(tab[i, (j - 1) % N]))
+            n_tab.append(int(tab[i, (j + 1) % N]))
+            n_tab.append(int(tab[(i - 1) % N, j]))
+            n_tab.append(int(tab[(i + 1) % N, j]))
+            n_tab.append(int(tab[(i - 1) % N, (j - 1) % N]))
+            n_tab.append(int(tab[(i - 1) % N, (j + 1) % N]))
+            n_tab.append(int(tab[(i + 1) % N, (j - 1) % N]))
+            n_tab.append(int(tab[(i + 1) % N, (j + 1) % N]))
+            n_tab2 = n_tab.copy()
+            c = neighbors(tab, i, j, radius=1)
+            if c<=0:
+                return
+            else:
+                k = tab[i][j]
+                while k in n_tab:
+                    n_tab.remove(k)
+                if len(n_tab)==0:
+                    e_tab[i][j] = 0
+                    continue
+
+                eBefore = len(n_tab)
+
+                newNum = random.choice(n_tab)
+                #print(newNum)
+                k = newNum
+
+                while k in n_tab2:
+                    n_tab2.remove(k)
+                eAfter = len(n_tab2)
+
+                deltaE = eAfter - eBefore;
+                Kt = 0.6
+                p = random.random();
+                expo = math.exp(-((deltaE) / (Kt)));
+                # print('xd')
+                # print(eBefore)
+                # print(eAfter)
+
+                if (deltaE <= 0):
+                    tab[i][j] = newNum
+                    e_tab[i][j] = eAfter
+                elif p < expo:
+                    tab[i][j] = newNum
+                    e_tab[i][j] = eAfter
+                else:
+                    e_tab[i][j] = eBefore
+    prints(tab,numel)
+
+def ppt():
+    global tab
+    global numel
+    N = numel
+    can.delete(ALL)
+    for i in range(N):
+        for j in range(N):
+            OneSquare(can, scale * j, scale * i, scale * j + scale, scale * i + scale, "white", i, j, tab)
+    prints(tab,numel)
+
 #niestabilny fragment
 r = lambda: random.randint(0,255)
 tab = np.array([])
 sc_tab = np.array([])
+e_tab = np.array([])
 t = None
 numel = 0
 scale = 13
@@ -428,8 +518,15 @@ dl1 = OptionMenu(mGui,my_var,*OPTIONS).grid(row=1, sticky='W', padx=(3,0))
 
 but = Button(mGui,text='Show',command=selected)
 but1 = Button(mGui,text='Start',command=pause)
-but.grid(row=4, sticky='E')
-but1.grid(row=6, column=0, sticky='E')
+but2 = Button(mGui,text='Energy',command=energy)
+but3 = Button(mGui,text='Print Energy',command=print_energy)
+but4 = Button(mGui,text='Print Normal',command=ppt)
+
+but.grid(row=1, sticky='E')
+but1.grid(row=2, sticky='E')
+but2.grid(row=3, sticky='E')
+but3.grid(row=4, sticky='E')
+but4.grid(row=5, sticky='E')
 
 
 OPTIONS2 = [
