@@ -127,9 +127,15 @@ def print_energy():
     for i in range(0, numel):
         for j in range(0, numel):
             if e_tab[i][j]==0:
-                OneSquare(can, scale * j, scale * i, scale * j + scale, scale * i + scale, "white", i, j, tab)
+                can.create_rectangle(scale * j, scale * i, scale * j + scale, scale * i + scale, fill="white")
+                #OneSquare(can, scale * j, scale * i, scale * j + scale, scale * i + scale, "white", i, j, tab)
             else:
-                OneSquare(can, scale * j, scale * i, scale * j + scale, scale * i + scale, "#191970", i, j, tab)
+                # can.create_rectangle(scale * j, scale * i, scale * j + scale, scale * i + scale, fill="#191970")
+                nr = int(e_tab[i][j]*32)
+                if nr>0:
+                    nr-=1
+                can.create_rectangle(scale * j, scale * i, scale * j + scale, scale * i + scale, fill="#1919{:02x}".format(nr))
+                #OneSquare(can, scale * j, scale * i, scale * j + scale, scale * i + scale, "#191970", i, j, tab)
     if not paused:
         paused=True
 
@@ -414,14 +420,10 @@ def energy():
     for i in permutation(N):
         for j in permutation(N):
             n_tab = []
-            n_tab.append(int(tab[i, (j - 1) % N]))
-            n_tab.append(int(tab[i, (j + 1) % N]))
-            n_tab.append(int(tab[(i - 1) % N, j]))
-            n_tab.append(int(tab[(i + 1) % N, j]))
-            n_tab.append(int(tab[(i - 1) % N, (j - 1) % N]))
-            n_tab.append(int(tab[(i - 1) % N, (j + 1) % N]))
-            n_tab.append(int(tab[(i + 1) % N, (j - 1) % N]))
-            n_tab.append(int(tab[(i + 1) % N, (j + 1) % N]))
+            for x in range(i - 1, i + 2):
+                for y in range(j - 1, j + 2):
+                    if 0 <= x < rows and 0 <= y < cols and x!=y:
+                         n_tab.append(int(tab[x,y]))
             n_tab2 = n_tab.copy()
             c = neighbors(tab, i, j, radius=1)
             if c<=0:
@@ -479,13 +481,13 @@ sc_tab = np.array([])
 e_tab = np.array([])
 t = None
 numel = 0
-scale = 13
+scale = 10
 cnt = 0
 
 mGui = Tk()
-mGui.geometry('600x745+500+30')
+mGui.geometry('600x765+500+25')
 mGui.title('Grains growth')
-mGui.resizable(False,False)
+mGui.resizable(True,True)
 
 my_var = IntVar()
 size = StringVar()
@@ -544,12 +546,6 @@ my_var2.set(OPTIONS2[0])
 
 dl2 = OptionMenu(mGui,my_var2,*OPTIONS2).grid(row=3, sticky='W', padx=(3,0))
 
-
-# rb1.grid(row=1, sticky='W', padx=(10,0))
-# rb2.grid(row=2, sticky='W', padx=(10,0))
-# rb3.grid(row=3, sticky='W', padx=(10,0))
-# rb4.grid(row=4, sticky='W', padx=(10,0))
-
 isRand = BooleanVar(mGui)
 isRand.set(False)
 rb1 = Checkbutton(mGui, text='Random', variable=isRand)
@@ -566,7 +562,7 @@ rb3 = Radiobutton(mGui, text='Right', variable=side, value="2")
 rb3.grid(row=6, sticky='W', padx=(10,0))
 
 lab2 = Label(text='Size:').grid(row=6, column=0, sticky='N')
-entry2.insert(END, '35')
+entry2.insert(END, '50')
 entry2.grid(row=7, column=0, sticky='N')
 
 
