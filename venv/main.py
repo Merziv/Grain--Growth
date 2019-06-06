@@ -14,7 +14,6 @@ c_tab = ["white"]
 
 class OneSquare():
     def __init__(self, can, start_x, start_y, end_x, end_y,color,i,j, tab):
-        #inicjalizacja
         global c_index
         global c_tab
         self.can=can
@@ -35,7 +34,6 @@ class OneSquare():
             c_index += 1
 
     def set_color(self, event, tab):
-        #zmien kolor
         global c_index
         global c_tab
         if self.color == "white":
@@ -52,7 +50,6 @@ class OneSquare():
         self.color = color
 
 def shuffle2d(arr2d, rand=random):
-    #2d randomizer
     reshape = []
     data = []
     iend = 0
@@ -64,7 +61,6 @@ def shuffle2d(arr2d, rand=random):
     return [data[istart:iend] for (istart,iend) in reshape]
 
 def create(numel):
-    #utworz wstepna tablice
     global e_tab
     global ro_tab
     global prev_rdx_tab
@@ -137,14 +133,11 @@ def print_energy():
         for j in range(0, numel):
             if e_tab[i][j]==0:
                 can.create_rectangle(scale * j, scale * i, scale * j + scale, scale * i + scale, fill="white")
-                #OneSquare(can, scale * j, scale * i, scale * j + scale, scale * i + scale, "white", i, j, tab)
             else:
-                # can.create_rectangle(scale * j, scale * i, scale * j + scale, scale * i + scale, fill="#191970")
                 nr = int(e_tab[i][j]*32)
                 if nr>0:
                     nr-=1
                 can.create_rectangle(scale * j, scale * i, scale * j + scale, scale * i + scale, fill="#1919{:02x}".format(nr))
-                #OneSquare(can, scale * j, scale * i, scale * j + scale, scale * i + scale, "#191970", i, j, tab)
     if not paused:
         paused=True
 
@@ -181,7 +174,6 @@ def selected():
         pass
 
 def homo(tab, a, b):
-    #jednorodnie
     if  a<1 or b<1 or a>len(tab) or b>len(tab):
         a=3
         b=3
@@ -202,7 +194,6 @@ def homo(tab, a, b):
 
 
 def neighbors(mat, row, col, radius):
-    #sasiedztwo w promieniu
     rows, cols = len(mat), len(mat[0])
     c = 0
     if radius<1:
@@ -220,7 +211,6 @@ def popup_showinfo():
 
 
 def in_range(tab, rad, amount):
-    #w promieniu
     cnt = 1
     if rad<1 or rad>len(tab):
         rad=1
@@ -240,12 +230,10 @@ def in_range(tab, rad, amount):
 
 
 def man(tab, numel):
-    #ręcznie
-    #choose and run
+    #choose and run / always available
     pass
 
 def rnd(tab, numel, amount):
-    #losowo
     cnt = 1
     tab2 = tab.copy()
     for i in range(0, numel):
@@ -267,7 +255,6 @@ def rnd(tab, numel, amount):
 
 
 def moore(tab, N):
-    #moore
     global c_tab
     tab2 = tab.copy()
     y = None
@@ -295,7 +282,6 @@ def moore(tab, N):
     tab[:] = tab2[:]
 
 def neumann(tab, N):
-    #von neumann
     global c_tab
     tab2 = tab.copy()
     y = None
@@ -319,7 +305,6 @@ def neumann(tab, N):
     tab[:] = tab2[:]
 
 def hexa(tab, N, opt):
-    #hexagonal edit
     global c_tab
     tab2 = tab.copy()
     repeat = False
@@ -361,7 +346,6 @@ def hexa(tab, N, opt):
     tab[:] = tab2[:]
 
 def penta(tab, N):
-    #pentagonal edit
     global c_tab
     tab2 = tab.copy()
     y = None
@@ -412,7 +396,6 @@ def calculateDistance(x1, y1, x2, y2):
 
 
 def growthRange(tab,N, radius):
-    #w promieniu - środki ciężkości edit
     global sc_tab
     tab2 = tab.copy()
     rows, cols = len(tab), len(tab[0])
@@ -484,7 +467,6 @@ def energy():
                 eBefore = len(n_tab)
 
                 newNum = random.choice(n_tab)
-                #print(newNum)
                 k = newNum
 
                 while k in n_tab2:
@@ -497,9 +479,6 @@ def energy():
                     Kt=0.1
                 p = random.random();
                 expo = math.exp(-((deltaE) / (Kt)));
-                # print('xd')
-                # print(eBefore)
-                # print(eAfter)
 
                 if (deltaE <= 0):
                     tab[i][j] = newNum
@@ -524,13 +503,18 @@ def ppt():
             OneSquare(can, scale * j, scale * i, scale * j + scale, scale * i + scale, "white", i, j, tab)
     prints(tab,numel)
 
-#############
+
+pCritical = None
 
 def calc_ro(A,B,t):
     ro = (A / B) + (1 - A / B) * math.exp(-B * t)
     return ro
 
-def drx_print(rdx_tab, ro_tab, numel, pCritical):
+def drx_print():
+    global rdx_tab
+    global ro_tab
+    global numel
+    global pCritical
     for i in range(numel):
         for j in range(numel):
             if rdx_tab[i][j] == 1:
@@ -552,17 +536,17 @@ def drx():
     global rdx_tab
     global ro_tab
     global tab
+    global pCritical
 
     rows, cols = len(tab), len(tab[0])
 
-    A = 86710969050178.5
-    B = 9.41268203527779
-    dt = 0.001
-    tMax = 0.2
+    A = float(entry_A.get())
+    B = float(entry_B.get())
+    dt = float(entry_dt.get())
+    tMax = float(entry_tmax.get())
     prevRo = 0
 
     pCritical = 4215840142323.42 / (numel * numel)
-    #pCritical = 46842668.25
 
     xd = 0
 
@@ -570,7 +554,6 @@ def drx():
     randomPackagePercentage = 0.3
 
     for t in np.arange(0, tMax, dt):
-        # calculate ro
         if t > 0:
             prev_rdx_tab = tmp_rdx_tab.copy()
             prev_ro_tab = ro_tab.copy()
@@ -578,7 +561,6 @@ def drx():
         tmp_rdx_tab = np.zeros(numel * numel).reshape(numel, numel)
 
         ro = (A / B) + (1 - A / B) * math.exp(-B * t)
-        # print(ro)
 
         if t == 0:
             dRo = ro
@@ -586,7 +568,6 @@ def drx():
             prevRo = ro_list[len(ro_list) - 1]
             dRo = ro - prevRo
 
-        # dystrybucja
         roPerCell = dRo / (numel * numel);
 
         equalDistribution = roPerCell * equalDistributionpercentage;
@@ -627,12 +608,11 @@ def drx():
             if p <= prob:
                 ro_tab[i][j] += randomDistribution
 
-        #zarodkowanie
         for i in range (numel):
             for j in range (numel):
                 if rdx_tab[i][j] == 1:
                     continue
-                #rekrystalizacja
+
                 if bound:
                     if ro_tab[i][j] > pCritical:
                         rdx_tab[i][j] = 1
@@ -640,7 +620,6 @@ def drx():
                         ro_tab[i][j] = 0
                         continue
 
-                #rozrost
                 rcl_tab = []
 
                 for x in range(i - 1, i + 2):
@@ -661,9 +640,9 @@ def drx():
                         tmp_rdx_tab[i][j] = 1
                         ro_tab[i][j] = 0
                         continue
-        #finito
+
         ro_list.append(ro)
-    drx_print(rdx_tab,ro_tab,numel, pCritical)
+    drx_print()
 
     f = open("results2.csv", "w+")
 
@@ -672,7 +651,6 @@ def drx():
         f.write("{}; {}\n".format(dt*i,ro_list[i]))
 
 
-#all
 ro_sum = []
 prev_ro_tab = []
 ro_tab = []
@@ -722,16 +700,18 @@ dl1 = OptionMenu(mGui,my_var,*OPTIONS).grid(row=1, sticky='W', padx=(2,0))
 but = Button(mGui,text='Show',command=selected)
 but1 = Button(mGui,text='Start',command=pause)
 but2 = Button(mGui,text='Monte Carlo',command=energy)
-but3 = Button(mGui,text='Print Energy',command=print_energy)
-but4 = Button(mGui,text='Print Normal',command=ppt)
-but5 = Button(mGui,text='DRX',command=drx)
+but3 = Button(mGui,text='Print Normal',command=ppt)
+but4 = Button(mGui,text='Print Energy',command=print_energy)
+but5 = Button(mGui,text='Print DRX',command=drx_print)
+but6 = Button(mGui,text='Start DRX',command=drx)
 
 but.grid(row=0, sticky='E')
 but1.grid(row=1, sticky='E')
 but2.grid(row=2, sticky='E')
 but3.grid(row=3, sticky='E')
 but4.grid(row=4, sticky='E')
-but5.grid(row=9, sticky='E')
+but5.grid(row=5, sticky='E')
+but6.grid(row=8, column=1, sticky='W')
 
 
 OPTIONS2 = [
@@ -763,9 +743,9 @@ iteration = IntVar()
 iteration.set(0)
 
 entry_kt = Entry(mGui)
-lab3 = Label(text='kT:').grid(row=5, column=0, sticky='E')
+lab3 = Label(text='kT:').grid(row=6, column=0, sticky='E')
 entry_kt.insert(END, '0.1')
-entry_kt.grid(row=6, column=0, sticky='E')
+entry_kt.grid(row=7, column=0, sticky='E')
 
 rb1 = Checkbutton(mGui, text='Random', variable=isRand)
 rb1.grid(row=4, sticky='W', padx=(2,0), pady=(2.0))
